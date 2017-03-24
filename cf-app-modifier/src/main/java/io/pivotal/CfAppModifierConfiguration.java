@@ -51,39 +51,17 @@ public class CfAppModifierConfiguration {
 		public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
 		}
 	} };
-
-	String getAppGUID(String name) throws Exception {
-		RestTemplate restTemplate = new RestTemplate();
-		ResponseEntity<String> responseEntity;
-
-		// URI takes the form https://somehost.somedomain/v###
-		// so if we split on "/v" and take the first token, the host is left
-		String apiHost = properties.getCfApiUri().split("/v")[0];
-		HttpHeaders headers = Connection.getAuthorizationHeader(getOAuthToken(), apiHost);
-
-		String getNameApiUri = properties.getCfApiUri() + "/apps?q=" + name;
-		
-		// get an application guid by name
-		responseEntity = restTemplate.exchange(getNameApiUri, HttpMethod.GET,
-				new HttpEntity<>(null, headers), String.class);
-
-		JSONParser parser = new JSONParser();
-		JSONObject json = (JSONObject) parser.parse(responseEntity.getBody());
-
-		JSONObject resources = (JSONObject) json.get("resources"); 
-		
-		String guid = "";
-		for (Object res : resources.values()){
-			guid = (String)((JSONObject) res).get("guid");
-			
-			// TODO, we assume the first app will be the correct
-			// GUID, since only one app should map to a name
-			break;
-		}
-		
-		return guid;
-	}
 	
+	/*
+	 * This Sink expects a simple, UP, or DOWN string payload.
+	 * Based on that payload and the configured CF app name, and credentials
+	 * this module will drive the CF APIs to scale the app up/down, clamped on
+	 * a configurable min / max number of instances.
+	 * 
+	 * The excepectation is that module preceding this one will handle 
+	 * rate-limiting, metric bandwidth, and trending logic.
+	 * 
+	 */
 	@StreamListener(Sink.INPUT)
 	public void adjustAppScale(String commandMessage) throws Exception {
 
@@ -120,7 +98,40 @@ public class CfAppModifierConfiguration {
 			// NOOP
 		}
 	}
+	
+	String getAppGUID(String name) throws Exception {
+		RestTemplate restTemplate = new RestTemplate();
+		ResponseEntity<String> responseEntity;
 
+		// URI takes the form https://somehost.somedomain/v###
+		// so if we split on "/v" and take the first token, the host is left
+		String apiHost = properties.getCfApiUri().split("/v")[0];
+		HttpHeaders headers = Connection.getAuthorizationHeader(getOAuthToken(), apiHost);
+
+		String getNameApiUri = properties.getCfApiUri() + "/apps?q=" + name;
+		
+		// get an application guid by name
+		responseEntity = restTemplate.exchange(getNameApiUri, HttpMethod.GET,
+				new HttpEntity<>(null, headers), String.class);
+
+		JSONParser parser = new JSONParser();
+		JSONObject json = (JSONObject) parser.parse(responseEntity.getBody());
+
+		JSONObject resources = (JSONObject) json.get("resources"); 
+		
+		String guid = "";
+		for (Object res : resources.values()){
+			JSONObject metadata  = (JSONObject) ((JSONObject) res).get("metadata");
+			guid = (String)((JSONObject) metadata).get("guid");
+			
+			// TODO, we assume the first app will be the correct
+			// GUID, since only one app should map to a name
+			break;
+		}
+		
+		return guid;
+	}
+	
 	@PostConstruct
 	private String getOAuthToken() throws Exception {
 		
