@@ -1,5 +1,8 @@
 package io.pivotal;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties("cfapp.scaler")
 public class CfAppModifierProperties {
 
 	/*

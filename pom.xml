@@ -67,8 +67,8 @@
   </repositories>
   <dependencies>
     <dependency>
-      <groupId>org.springframework.cloud.stream.app</groupId>
-      <artifactId>spring-cloud-starter-stream-sink-rabbit</artifactId>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-stream-binder-rabbit</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
